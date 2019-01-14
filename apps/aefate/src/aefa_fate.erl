@@ -225,8 +225,8 @@ eval({not_a_r, Name}, EngineState) ->
 %% ------------------------------------------------------
 %% Stack instructions
 %% ------------------------------------------------------
-eval(dup, EngineState) ->
-    {next, dup(EngineState)};
+eval({dup, I}, EngineState) ->
+    {next, dup(I, EngineState)};
 
 %% ------------------------------------------------------
 %% Memory instructions
@@ -524,8 +524,10 @@ pop(#{ accumulator := X, accumulator_stack := [V|Stack]} = ES) ->
            , accumulator_stack := Stack
            }}.
 
-dup(#{ accumulator := X, accumulator_stack := Stack} = ES) ->
-    ES#{ accumulator => X
+dup(I, #{ accumulator := X, accumulator_stack := Stack} = ES) ->
+    Stack1 = [X | Stack],
+    Y      = lists:nth(I + 1, Stack1),
+    ES#{ accumulator => Y
        , accumulator_stack := [X|Stack]}.
 
 drop(0, ES) -> ES;
