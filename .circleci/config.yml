@@ -3,7 +3,7 @@ version: 2
 references:
   container_config: &container_config
     docker:
-      - image: aeternity/builder
+      - image: aeternity/builder:ci-build-otp-21
         user: builder
     working_directory: ~/epoch
 
@@ -47,7 +47,7 @@ references:
       name: Install OTP
       environment:
         # See minimum_otp_vsn in rebar.config
-        OTP_VERSION: "20.1"
+        OTP_VERSION: "21.2.3"
       command: |
         # Install OTP package deps
         sudo apt-get update && sudo apt-get install libwxbase3.0-dev libwxgtk3.0-dev
