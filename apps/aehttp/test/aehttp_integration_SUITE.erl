@@ -3809,6 +3809,55 @@ query_state_(ConnPid, <<"json-rpc">>) ->
         ConnPid, #{ <<"method">> => <<"channels.get.offchain_state">>
                   , <<"params">> => #{} })}.
 
+sc_ws_get_contract_assert_equal(ConnPid1, ConnPid2, Pubkey, Config) ->
+    ContractState = sc_ws_get_contract(ConnPid1, Pubkey, Config),
+    ContractState = sc_ws_get_contract(ConnPid2, Pubkey, Config),
+    ContractState.
+
+sc_ws_get_contract(ConnPid, Pubkey, Config) ->
+    PubkeyE = aehttp_api_encoder:encode(contract_pubkey, Pubkey),
+    {ok, #{<<"contract">> := ContractE,
+           <<"contract_state">> := ContractStateE }} = query_contract(ConnPid, PubkeyE, Config),
+    #{ <<"id">>          := IdE
+    , <<"owner_id">>     := OwnerIdE
+    , <<"vm_version">>   := VMVersion
+    , <<"abi_version">>  := CTVersion
+    , <<"log">>          := Log
+    , <<"active">>       := Active
+    , <<"referrer_ids">> := ReferrerIdsE
+    , <<"deposit">>      := Deposit
+    } = ContractE,
+    {ok, Id} = aehttp_api_encoder:safe_decode({id_hash, [contract_pubkey]}, IdE),
+    {ok, OwnerId} = aehttp_api_encoder:safe_decode({id_hash, [account_pubkey]}, OwnerIdE),
+    ReferrerIds = [ RId || {ok, RId} <- [aehttp_api_encoder:safe_decode({id_hash, [contract_pubkey]}, RId) || RId <- ReferrerIdsE]],
+    ContractState = maps:from_list([
+        {Key, Val} || {{ok, Key}, {ok, Val}}
+        <- [ {aehttp_api_encoder:safe_decode(contract_store_key, Key),
+              aehttp_api_encoder:safe_decode(contract_store_value, Val)} || {Key, Val} <- maps:to_list(ContractStateE) ]
+    ]),
+    #{ id => Id
+     , owner_id => OwnerId
+     , vm_version => VMVersion
+     , ct_version => CTVersion
+     , log => Log
+     , active => Active
+     , referrer_ids => ReferrerIds
+     , deposit => Deposit
+     , state => ContractState
+    }.
+
+query_contract(ConnPid, Pubkey, Config) ->
+    query_contract_(ConnPid, Pubkey, sc_ws_protocol(Config)).
+
+query_contract_(ConnPid, Pubkey, <<"legacy">>) ->
+    ?WS:send_tagged(ConnPid, <<"get">>, <<"contract">>, #{<<"pubkey">> => Pubkey}),
+    {ok, <<"contract">>, Res} = ?WS:wait_for_channel_event(ConnPid, get),
+    {ok, Res};
+query_contract_(ConnPid, Pubkey, <<"json-rpc">>) ->
+    {ok, ?WS:json_rpc_call(
+        ConnPid, #{ <<"method">> => <<"channels.get.contract">>
+                  , <<"params">> => #{<<"pubkey">> => Pubkey}})}.
+
 sc_ws_close_mutual_(Config, Closer) when Closer =:= initiator
                                  orelse Closer =:= responder ->
     ct:log("ConfigList = ~p", [Config]),
@@ -4157,7 +4206,16 @@ sc_ws_oracle_contract_(Owner, GetVolley, ConnPid1, ConnPid2,
     UnsignedStateTx = CreateVolley(),
     ContractPubKey = contract_id_from_create_update(OwnerPubKey,
                                                     UnsignedStateTx),
-
+    #{ active := true
+     , ct_version := 1
+     , deposit := 10
+     , vm_version := 3
+     , id := {id, contract, ContractPubKey}
+     , owner_id := {id, account, OwnerPubkey}
+     , referrer_ids := []
+     , state := State1
+     } = sc_ws_get_contract_assert_equal(ConnPid1, ConnPid2, ContractPubKey, Config),
+    <<0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0>> = maps:get(<<2>>, State1),
     CallContract =
         fun(Who, Fun, Args, ReturnType, Result) ->
             {UpdateVolley, UpdaterConnPid, _UpdaterPubKey} = GetVolley(Who),
@@ -4176,6 +4234,16 @@ sc_ws_oracle_contract_(Owner, GetVolley, ConnPid1, ConnPid2,
         || {Who, Bet} <- [{initiator, <<"I win">>},
                           {responder, <<"no, I win">>}]],
 
+    #{ active := true
+     , ct_version := 1
+     , deposit := 10
+     , vm_version := 3
+     , id := {id, contract, ContractPubKey}
+     , owner_id := {id, account, OwnerPubkey}
+     , referrer_ids := []
+     , state := State2
+     } = sc_ws_get_contract_assert_equal(ConnPid1, ConnPid2, ContractPubKey, Config),
+    <<0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2>> = maps:get(<<2>>, State2),
     %% initiator places a bet and then nobody can overwrite it
     ParkedAnswer = <<"I claim this">>,
     CallContract(initiator, <<"place_bet">>, <<"\"", ParkedAnswer/binary, "\"">>,
@@ -4190,7 +4258,16 @@ sc_ws_oracle_contract_(Owner, GetVolley, ConnPid1, ConnPid2,
     [CallContract(Who, <<"resolve">>, <<"(", EncodedErrQuery/binary, ")">>,
                   <<"string">>, <<"different question">>)
         || Who <- [initiator, responder]],
-
+    #{ active := true
+     , ct_version := 1
+     , deposit := 10
+     , vm_version := 3
+     , id := {id, contract, ContractPubKey}
+     , owner_id := {id, account, OwnerPubkey}
+     , referrer_ids := []
+     , state := State3
+     } = sc_ws_get_contract_assert_equal(ConnPid1, ConnPid2, ContractPubKey, Config),
+    <<0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3>> = maps:get(<<2>>, State3),
     Answer = <<"other reasonable thingy">>,
     CorrectQueryId = OracleQuerySequence(Question, Answer),
     EncodedQueryId = aeu_hex:hexstring_encode(CorrectQueryId),
@@ -4201,7 +4278,7 @@ sc_ws_oracle_contract_(Owner, GetVolley, ConnPid1, ConnPid2,
                                                            Config),
     CallContract(Owner, <<"resolve">>, <<"(", EncodedQueryId/binary, ")">>,
                  <<"string">>, <<"no winning bet">>),
-
+    sc_ws_get_contract_assert_equal(ConnPid1, ConnPid2, ContractPubKey, Config),
     % no changes in balances
     {ok, {OwnerBal0, OtherBal0}} = sc_ws_get_both_balances(ConnPid1,
                                                            OwnerPubkey,
@@ -4211,6 +4288,17 @@ sc_ws_oracle_contract_(Owner, GetVolley, ConnPid1, ConnPid2,
     % owner posts the correct
     CallContract(Owner, <<"place_bet">>, <<"\"", Answer/binary, "\"">>,
                   <<"string">>, <<"ok">>),
+    #{ active := true
+     , ct_version := 1
+     , deposit := 10
+     , vm_version := 3
+     , id := {id, contract, ContractPubKey}
+     , owner_id := {id, account, OwnerPubkey}  %%FIXME
+     , referrer_ids := []
+     , state := State5
+    } = sc_ws_get_contract_assert_equal(ConnPid1, ConnPid2, ContractPubKey, Config),
+    <<0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4>> = maps:get(<<2>>, State5),
+
     {ok, {OwnerBal, OtherBal0}} = sc_ws_get_both_balances(ConnPid1,
                                                           OwnerPubkey,
                                                           OtherPubkey,
@@ -4218,6 +4306,8 @@ sc_ws_oracle_contract_(Owner, GetVolley, ConnPid1, ConnPid2,
     {ok, ContractBalance} = sc_ws_get_balance(ConnPid1, ContractPubKey, Config),
     CallContract(Owner, <<"resolve">>, <<"(", EncodedQueryId/binary, ")">>,
                  <<"string">>, <<"ok">>),
+    sc_ws_get_contract_assert_equal(ConnPid1, ConnPid2, ContractPubKey, Config),
+
     % contract balance is 0 now
     {ok, 0} = sc_ws_get_balance(ConnPid1, ContractPubKey, Config),
     {ok, 0} = sc_ws_get_balance(ConnPid2, ContractPubKey, Config),
