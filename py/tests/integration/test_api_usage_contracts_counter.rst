@@ -159,3 +159,51 @@ cb_...
 >>> ae_node['internal_api'].decode_data(SophiaBinaryData(sophia_type=counter_contract_get_function_return_value_type,
 ...                                                         data=contract_call_object.return_value)).data
 {u'type': u'word', u'value': 21}
+
+Step 2.1 (optional): Alice double checks how much she was charged
+-----------------------------------------------------------------
+
+In order to double check how much was charged to her by the inclusion of the contract call transaction in the chain, Alice identifies the expected charge, identifies the actual charge, finally compares the two.
+
+Alice identifies the expected charge, by:
+
+>>> print(users['b']['encoded_pub_key']) # doctest: +ELLIPSIS
+ak_...
+
+- Considering the expected gas used by the execution of the contract (by testing the execution of the contract on her local node).
+
+>>> print(users['b']['encoded_pub_key']) # doctest: +ELLIPSIS
+ak_...
+
+- Considering the size of the unsigned transaction.
+
+>>> print(users['b']['encoded_pub_key']) # doctest: +ELLIPSIS
+ak_...
+
+- Summing the portion of the charge related to the size of the transaction, and the one related to the execution of the contract.
+
+>>> print(users['b']['encoded_pub_key']) # doctest: +ELLIPSIS
+ak_...
+
+Alice identifies the actual charge, by:
+
+>>> print(users['b']['encoded_pub_key']) # doctest: +ELLIPSIS
+ak_...
+
+- Computing the difference of her balance before and after the inclusion of the transaction in the chain.
+
+>>> print(users['b']['encoded_pub_key']) # doctest: +ELLIPSIS
+ak_...
+
+- Identifying the actual gas used by the execution of the contract on the chain.
+
+>>> print(users['b']['encoded_pub_key']) # doctest: +ELLIPSIS
+ak_...
+
+
+Identify pubkey of sender account.
+Identify hash of tx.
+Retrieve height of tx inclusion.
+Retrieve balance of account at height before tx inclusion.
+Assert that number of confirmations on call tx is greater than or equal to 1.
+Retrieve balance of account at 
