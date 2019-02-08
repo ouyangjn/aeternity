@@ -19,8 +19,6 @@ references:
   container_otp_plt: &container_otp_plt _build/default/rebar3_20.3.8_plt
 
   infrastructure_config: &infrastructure_config
-#    docker:
-#      - image: aeternity/infrastructure
     working_directory: ~/aeternity
     environment:
       DOCKERHUB_REPO: aeternity/aeternity
