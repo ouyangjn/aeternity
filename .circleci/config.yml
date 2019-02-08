@@ -15,8 +15,8 @@ references:
   container_otp_plt: &container_otp_plt _build/default/rebar3_20.3.8_plt
 
   infrastructure_config: &infrastructure_config
-    docker:
-      - image: aeternity/infrastructure
+#    docker:
+#      - image: aeternity/infrastructure
     working_directory: ~/aeternity
     environment:
       DOCKERHUB_REPO: aeternity/aeternity
@@ -630,6 +630,7 @@ jobs:
     steps: *deploy_steps
 
   deploy_dev1:
+    executor: unstable
     <<: *infrastructure_config
     environment:
       - DEPLOY_ENV: dev1
@@ -854,7 +855,6 @@ workflows:
                 - master
 
       - deploy_dev1:
-          executor: unstable
           requires:
             - linux_package
           filters:
