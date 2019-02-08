@@ -1,11 +1,4 @@
-version: 2.1
-executors:
-  unstable:
-    docker:
-      - image: aeternity/infrastructure:master
-  stable:
-    docker:
-      - image: aeternity/infrastructure:master
+version: 2
 
 references:
   container_config: &container_config
@@ -18,8 +11,8 @@ references:
   container_otp_plt: &container_otp_plt _build/default/rebar3_20.3.8_plt
 
   infrastructure_config: &infrastructure_config
-#    docker:
-#      - image: aeternity/infrastructure
+    docker:
+      - image: aeternity/infrastructure
     working_directory: ~/aeternity
     environment:
       DOCKERHUB_REPO: aeternity/aeternity
@@ -142,7 +135,7 @@ references:
         epmd -daemon
         make python-env
         mkdir ${PACKAGE_TESTS_DIR:?}
-#        make python-release-test WORKDIR=${PACKAGE_TESTS_DIR:?} TARBALL=${PACKAGE_TARBALL:?}
+        make python-release-test WORKDIR=${PACKAGE_TESTS_DIR:?} TARBALL=${PACKAGE_TARBALL:?}
 
   store_package_artifacts: &store_package_artifacts
     store_artifacts:
@@ -329,11 +322,11 @@ jobs:
       - checkout
       - *restore_rebar_cache
       - *restore_build_cache
-      #- run:
-      #    name: Test
-      #    command: |
-      #      epmd -daemon
-      #      make ct CT_TEST_FLAGS="--suite=$(.circleci/split_suites.sh)"
+      - run:
+          name: Test
+          command: |
+            epmd -daemon
+            make ct CT_TEST_FLAGS="--suite=$(.circleci/split_suites.sh)"
       # Isolates the junit.xml report because additional files in _build/test/logs
       # are somehow causing issue with xunit report upload, parsing and merging
       - run:
@@ -428,7 +421,6 @@ jobs:
       - *fail_notification
 
   upload_build_artifacts:
-    executor: stable
     <<: *infrastructure_config
     steps:
       - checkout
@@ -539,7 +531,6 @@ jobs:
       - *fail_notification
 
   docker_push_tag:
-    executor: stable
     <<: *infrastructure_config
     steps:
       - checkout
@@ -554,7 +545,6 @@ jobs:
             docker push ${DOCKERHUB_REPO:?}:latest
 
   uat_chain_snapshot:
-    executor: stable
     <<: *infrastructure_config
     environment:
       - BACKUP_ENV: uat
@@ -565,7 +555,6 @@ jobs:
           path: *chain_snapshots
 
   main_chain_snapshot:
-    executor: stable
     <<: *infrastructure_config
     environment:
       - BACKUP_ENV: main
@@ -630,7 +619,6 @@ jobs:
           path: *system_test_host_logs
 
   deploy_integration:
-    executor: unstable
     <<: *infrastructure_config
     environment:
       - DEPLOY_ENV: integration
@@ -638,21 +626,18 @@ jobs:
     steps: *deploy_steps
 
   deploy_dev1:
-    executor: unstable
     <<: *infrastructure_config
     environment:
       - DEPLOY_ENV: dev1
     steps: *deploy_steps
 
   deploy_dev2:
-    executor: unstable
     <<: *infrastructure_config
     environment:
       - DEPLOY_ENV: dev2
     steps: *deploy_steps
 
   deploy_uat_blue:
-    executor: stable
     <<: *infrastructure_config
     environment:
       - DEPLOY_ENV: uat
@@ -661,7 +646,6 @@ jobs:
     steps: *deploy_steps
 
   deploy_uat_green:
-    executor: stable
     <<: *infrastructure_config
     environment:
       - DEPLOY_ENV: uat
@@ -670,7 +654,6 @@ jobs:
     steps: *deploy_steps
 
   upload_packages_osx:
-    executor: stable
     <<: *infrastructure_config
     steps:
       - checkout
@@ -682,7 +665,6 @@ jobs:
       - *upload_release_artifacts
 
   upload_packages_linux:
-    executor: stable
     <<: *infrastructure_config
     steps:
       - checkout
