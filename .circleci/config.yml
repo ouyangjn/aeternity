@@ -1,4 +1,8 @@
-version: 2
+version: 2.1
+executors:
+  unstable:
+    docker:
+      - image: aeternity/infrastructure:deploy_from_diffrent_infrastructure_versions_163419653
 
 references:
   container_config: &container_config
@@ -850,6 +854,7 @@ workflows:
                 - master
 
       - deploy_dev1:
+          executor: unstable
           requires:
             - linux_package
           filters:
