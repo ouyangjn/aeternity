@@ -329,11 +329,11 @@ jobs:
       - checkout
       - *restore_rebar_cache
       - *restore_build_cache
-      - run:
-          name: Test
-          command: |
-            epmd -daemon
-            make ct CT_TEST_FLAGS="--suite=$(.circleci/split_suites.sh)"
+      #- run:
+      #    name: Test
+      #    command: |
+      #      epmd -daemon
+      #      make ct CT_TEST_FLAGS="--suite=$(.circleci/split_suites.sh)"
       # Isolates the junit.xml report because additional files in _build/test/logs
       # are somehow causing issue with xunit report upload, parsing and merging
       - run:
