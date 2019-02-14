@@ -18,11 +18,6 @@
         , genesis_block_with_state/1
         ]).
 
--import(aec_chain_state,
-        [ insert_block/1
-        , insert_block/2
-        ]).
-
 -import(aec_chain,
         [ difficulty_at_hash/1
         , difficulty_at_top_block/0
@@ -1711,3 +1706,18 @@ reward_40(Fee) -> Fee * 4 div 10.
 
 reward_60(Fee) -> Fee - reward_40(Fee).
 
+%% ------------------------------------------------------------
+%% Mapping the return value of aec_chain_state:insert_block/[1,2] to match the old API
+%% This essentially throws away the tx_events generated. For tests that actually want to
+%% look at those, use the aec_chain_state API directly.
+%%
+
+insert_block(Block) ->
+    insert_block_ret(aec_chain_state:insert_block(Block)).
+
+insert_block(Block, Origin) ->
+    insert_block_ret(aec_chain_state:insert_block(Block, Origin)).
+
+insert_block_ret({ok,_}     ) -> ok;
+insert_block_ret({pof,Pof,_}) -> {pof,Pof};
+insert_block_ret(Other      ) -> Other.

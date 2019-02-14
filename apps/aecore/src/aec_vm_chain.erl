@@ -8,7 +8,7 @@
 
 -behaviour(aevm_chain_api).
 
--export([new_state/4, get_trees/1,
+-export([new_state/4, get_trees/1, get_tx_env/1,
          new_offchain_state/5
          ]).
 
@@ -115,6 +115,9 @@ new_offchain_state(OffChainTrees, OnChainTrees, TxEnv,
 -spec get_trees(chain_state()) -> aec_trees:trees().
 get_trees(State) ->
     get_top_trees(State).
+
+get_tx_env(#state{ tx_env = TxEnv }) ->
+    TxEnv.
 
 %% @doc Get the chain height from a state.
 get_height(#state{ tx_env = TxEnv }) ->
@@ -658,7 +661,7 @@ call_contract(Target, Gas, Value, CallData, CallStack, Origin,
             {value, ContractAccount} = aec_accounts_trees:lookup(ContractKey, AT),
             Nonce = aec_accounts:nonce(ContractAccount) + 1,
             ABIVersion = aect_contracts:abi_version(Contract),
-            <<OriginAddr:256>> = Origin,
+            <<_OriginAddr:256>> = Origin,
             {ok, CallTx} =
                 aect_call_tx:new(#{ caller_id   => aec_id:create(contract, ContractKey),
                                     nonce       => Nonce,
@@ -704,8 +707,9 @@ do_set_store(Store, PubKey, Trees) ->
 apply_call_transaction(Tx, Gas, #state{tx_env = Env} = State) ->
     Trees = get_top_trees(State),
     case aetx:custom_apply(process_call_from_contract, Tx, Trees, Env) of
-        {ok, Call, Trees1} ->
-            State1 = set_top_trees(State, Trees1),
+        {ok, Call, Trees1, Env1} ->
+            NewEnv = aetx_env:accumulate_env(Env1, Env),
+            State1 = set_top_trees(State#state{tx_env = NewEnv}, Trees1),
             GasUsed = aect_call:gas_used(Call),
             case aect_call:return_type(Call) of
                 error ->
@@ -727,7 +731,7 @@ apply_call_transaction(Tx, Gas, #state{tx_env = Env} = State) ->
 apply_transaction(Tx, #state{tx_env = Env } = State) ->
     Trees = get_top_trees(State),
     case aetx:process(Tx, Trees, Env) of
-        {ok, Trees1} ->
+        {ok, Trees1, _} ->
             State1 = set_top_trees(State, Trees1),
             {ok, State1};
         {error, _} = E -> E
