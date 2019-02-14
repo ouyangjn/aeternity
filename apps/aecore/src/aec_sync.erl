@@ -330,6 +330,7 @@ get_next_work_item(ST = #sync_task{ pool = [{_, _, {_, _}} | _] = Pool, adding =
         _ when length(Pend) < 10 orelse NewPool /= [] ->
             get_next_work_item(ST#sync_task{ pool = NewPool, pending = Pend ++ [ToBeAdded] });
         _ ->
+            epoch_sync:info("Nothing to do", []),
             {take_a_break, ST}
     end;
 get_next_work_item(ST = #sync_task{ pool = [{_, _, false} | _] = Pool }) ->
