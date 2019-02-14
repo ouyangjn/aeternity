@@ -12,7 +12,7 @@ references:
 
   infrastructure_config: &infrastructure_config
     docker:
-      - image: aeternity/infrastructure
+      - image: aeternity/infrastructure:custom_config_for_dev_deploy_162416612
     working_directory: ~/aeternity
     environment:
       DOCKERHUB_REPO: aeternity/aeternity
