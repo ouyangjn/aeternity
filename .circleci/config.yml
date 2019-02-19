@@ -844,7 +844,6 @@ workflows:
             branches:
               only:
                 - master
-                - Speed-up-OSX-package-builds-PT-163453734
             tags:
               only: *tag_regex
 
