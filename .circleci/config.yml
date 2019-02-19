@@ -487,7 +487,10 @@ jobs:
           name: Install required tools
           command: |
             brew install libsodium
+            brew link libsoidium
             brew install file://`pwd`/deployment/homebrew/erlang.rb
+            brew link erlang
+            for erlang_dep in $(brew deps erlang); do brew link $erlang_dep; done
       - *save_macos_package_cache
       - *set_package_path
       - *build_package
