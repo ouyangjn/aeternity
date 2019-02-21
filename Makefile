@@ -123,6 +123,9 @@ multi-distclean:
 dev1-build: KIND=dev1
 dev1-build: internal-build
 
+dev1-package: KIND=dev1
+dev1-package: internal-package
+
 dev1-start: KIND=dev1
 dev1-start: internal-start
 
