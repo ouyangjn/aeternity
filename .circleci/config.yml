@@ -122,7 +122,7 @@ references:
       command: |
         make prod-package
         mkdir ${PACKAGES_DIR:?}
-        mv _build/prod/rel/aeternity/aeternity-$(cat VERSION).tar.gz ${PACKAGE_TARBALL:?}
+        mv _build/${DEPLOY_ENV}/rel/aeternity/aeternity-$(cat VERSION).tar.gz ${PACKAGE_TARBALL:?}
 
   build_package_dev1: &build_package_dev1
     run:
@@ -132,7 +132,7 @@ references:
       command: |
         make dev1-package
         mkdir ${PACKAGES_DIR:?}
-        mv _build/prod/rel/aeternity/aeternity-$(cat VERSION).tar.gz ${PACKAGE_TARBALL:?}
+        mv _build//rel/aeternity/aeternity-$(cat VERSION).tar.gz ${PACKAGE_TARBALL:?}
 
   package_tests_workspace: &package_tests_workspace /tmp/package_tests
   test_package: &test_package
