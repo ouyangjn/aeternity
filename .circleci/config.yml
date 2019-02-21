@@ -416,7 +416,7 @@ jobs:
       - checkout
       - *set_package_path
       - *build_package_dev1
-      - *test_package
+#      - *test_package
       - store_artifacts:
           path: /tmp/package_tests/node1/log
       - store_artifacts:
