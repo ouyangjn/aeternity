@@ -124,7 +124,7 @@ references:
         mkdir ${PACKAGES_DIR:?}
         mv _build/prod/rel/aeternity/aeternity-$(cat VERSION).tar.gz ${PACKAGE_TARBALL:?}
 
-  build_package_dev1: &build_package
+  build_package_dev1: &build_package_dev1
     run:
       name: Build Package Tarball
       environment:
